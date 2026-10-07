@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="vi" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khung Bình Luận Tương Tác</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                }
+            }
+        }
+    </script>
+    <style>
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 h-full flex flex-col font-sans antialiased">
+
+    <!-- Header -->
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-20 shadow-xs">
+        <div class="max-w-3xl mx-auto px-4 py-4 flex items-center justify-between">
+            <div class="flex items-center space-x-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-indigo-600 to-violet-500 flex items-center justify-center text-white shadow-md shadow-indigo-500/20">
+                    <i class="fa-solid fa-comments text-lg"></i>
+                </div>
+                <div>
+                    <h1 class="font-bold text-lg text-slate-900 leading-tight">Không Gian Thảo Luận</h1>
+                    <p class="text-xs text-slate-500">Chia sẻ ý kiến và tương tác trực tuyến</p>
+                </div>
+            </div>
+            <div class="flex items-center space-x-2">
+                <span id="totalCommentsBadge" class="bg-indigo-50 text-indigo-600 font-semibold px-3 py-1 rounded-full text-xs border border-indigo-100">
+                    0 bình luận
+                </span>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-3xl w-full mx-auto px-4 py-6 flex flex-col gap-6 overflow-y-auto custom-scrollbar">
+        
+        <!-- Input Form Section -->
+        <section class="bg-white rounded-2xl p-5 shadow-sm border border-slate-200/80 transition-all focus-within:shadow-md focus-within:border-indigo-300">
+            <form id="mainCommentForm" onsubmit="handleMainSubmit(event)" class="flex flex-col gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 text-white font-bold flex items-center justify-center text-sm shadow-inner">
+                        <i class="fa-solid fa-user text-xs"></i>
+                    </div>
+                    <div class="flex-1">
+                        <input type="text" id="currentUserName" placeholder="Nhập tên của bạn..." required
+                            class="w-full text-sm font-semibold text-slate-800 bg-slate-50 border border-slate-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all">
+                    </div>
+                </div>
+                <div class="relative">
+                    <textarea id="mainCommentInput" rows="3" placeholder="Viết bình luận của bạn ở đây..." required oninput="updateCharCount()"
+                        class="w-full text-sm text-slate-700 bg-slate-50 border border-slate-200 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition-all resize-none"></textarea>
+                    <div class="absolute bottom-3 right-3 text-[11px] text-slate-400 font-medium" id="charCount">0/500</div>
+                </div>
+                <div class="flex items-center justify-between pt-1">
+                    <div class="text-xs text-slate-400 flex items-center gap-1">
+                        <i class="fa-solid fa-shield-halved text-emerald-500"></i> Dữ liệu tự động lưu an toàn
+                    </div>
+                    <button type="submit" 
+                        class="bg-indigo-600 hover:bg-indigo-700 active:scale-95 text-white font-medium px-5 py-2 rounded-xl text-sm shadow-md shadow-indigo-600/20 transition-all flex items-center gap-2 cursor-pointer">
+                        <i class="fa-solid fa-paper-plane text-xs"></i> Đăng bình luận
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <!-- Comments Section Header -->
+        <div class="flex items-center justify-between border-b border-slate-200 pb-3">
+            <h2 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                <i class="fa-solid fa-stream text-indigo-600"></i> Danh sách bình luận
+            </h2>
+            <div class="flex items-center gap-2">
+                <select id="sortSelect" onchange="renderComments()" class="text-xs bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-slate-600 font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500/20 cursor-pointer">
+                    <option value="newest">Mới nhất trước</option>
+                    <option value="oldest">Cũ nhất trước</option>
+                    <option value="likes">Nhiều lượt thích nhất</option>
+                </select>
+            </div>
+        </div>
+
+        <!-- Comments Container (Initially Empty) -->
+        <div id="commentsContainer" class="flex flex-col gap-4 pb-12">
+            <!-- Dynamic comments injected here -->
+        </div>
+
+    </main>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="fixed bottom-5 right-5 z-50 bg-slate-900 text-white text-xs px-4 py-3 rounded-xl shadow-xl flex items-center gap-2 transform translate-y-20 opacity-0 transition-all duration-300 pointer-events-none">
+        <i id="toastIcon" class="fa-solid fa-circle-check text-emerald-400 text-sm"></i>
+        <span id="toastMessage">Thông báo thành công</span>
+    </div>
+
+    <script>
+        // State management: Khởi tạo mảng trống hoàn toàn (lưu trong localStorage)
+        let comments = JSON.parse(localStorage.getItem('clean_interactive_comments')) || [];
+
+        // Save comments to localStorage
+        function saveComments() {
+            localStorage.setItem('clean_interactive_comments', JSON.stringify(comments));
+            updateBadgeCount();
+        }
+
+        // Update comment counter badge
+        function updateBadgeCount() {
+            let total = comments.length;
+            comments.forEach(c => total += (c.replies ? c.replies.length : 0));
+            document.getElementById('totalCommentsBadge').innerText = `${total} bình luận`;
+        }
+
+        // Update character counter
+        function updateCharCount() {
+            const input = document.getElementById('mainCommentInput');
+            const count = input.value.length;
+            const counterEl = document.getElementById('charCount');
+            counterEl.innerText = `${count}/500`;
+            if (count > 500) {
+                counterEl.classList.add('text-rose-500');
+                input.value = input.value.substring(0, 500);
+            } else {
+                counterEl.classList.remove('text-rose-500');
+            }
+        }
+
+        // Show custom toast notification
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            const toastMsg = document.getElementById('toastMessage');
+            const toastIcon = document.getElementById('toastIcon');
+
+            toastMsg.innerText = message;
+            if(type === 'success') {
+                toastIcon.className = "fa-solid fa-circle-check text-emerald-400 text-sm";
+            } else {
+                toastIcon.className = "fa-solid fa-circle-exclamation text-amber-400 text-sm";
+            }
+
+            toast.classList.remove('translate-y-20', 'opacity-0');
+            toast.classList.add('translate-y-0', 'opacity-100');
+
+            setTimeout(() => {
+                toast.classList.remove('translate-y-0', 'opacity-100');
+                toast.classList.add('translate-y-20', 'opacity-0');
+            }, 3000);
+        }
+
+        // Format relative time helper
+        function timeAgo(timestamp) {
+            const seconds = Math.floor((Date.now() - timestamp) / 1000);
+            if (seconds < 60) return 'Vừa xong';
+            const minutes = Math.floor(seconds / 60);
+            if (minutes < 60) return `${minutes} phút trước`;
+            const hours = Math.floor(minutes / 60);
+            if (hours < 24) return `${hours} giờ trước`;
+            const days = Math.floor(hours / 24);
+            return `${days} ngày trước`;
+        }
+
+        // Generate avatar background color based on name
+        function getAvatarColor(name) {
+            const colors = [
+                'from-blue-500 to-indigo-600',
+                'from-emerald-500 to-teal-600',
+                'from-amber-500 to-orange-600',
+                'from-rose-500 to-pink-600',
+                'from-purple-500 to-indigo-600'
+            ];
+            let hash = 0;
+            for (let i = 0; i < name.length; i++) {
+                hash = name.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return colors[Math.abs(hash) % colors.length];
+        }
+
+        // Handle main comment submission
+        function handleMainSubmit(e) {
+            e.preventDefault();
+            const nameInput = document.getElementById('currentUserName');
+            const commentInput = document.getElementById('mainCommentInput');
+
+            const newComment = {
+                id: Date.now().toString(),
+                name: nameInput.value.trim(),
+                text: commentInput.value.trim(),
+                timestamp: Date.now(),
+                likes: 0,
+                liked: false,
+                replies: []
+            };
+
+            comments.unshift(newComment);
+            saveComments();
+            renderComments();
+
+            commentInput.value = '';
+            document.getElementById('charCount').innerText = '0/500';
+            showToast('Đã đăng bình luận thành công!');
+        }
+
+        // Toggle like on comment or reply
+        function toggleLike(commentId, replyId = null) {
+            if (!replyId) {
+                const comment = comments.find(c => c.id === commentId);
+                if (comment) {
+                    comment.liked = !comment.liked;
+                    comment.likes += comment.liked ? 1 : -1;
+                }
+            } else {
+                const comment = comments.find(c => c.id === commentId);
+                if (comment) {
+                    const reply = comment.replies.find(r => r.id === replyId);
+                    if (reply) {
+                        reply.liked = !reply.liked;
+                        reply.likes += reply.liked ? 1 : -1;
+                    }
+                }
+            }
+            saveComments();
+            renderComments();
+        }
+
+        // Delete comment or reply
+        function deleteComment(commentId, replyId = null) {
+            if (!confirm('Bạn có chắc chắn muốn xóa bình luận này?')) return;
+
+            if (!replyId) {
+                comments = comments.filter(c => c.id !== commentId);
+                showToast('Đã xóa bình luận.');
+            } else {
+                const comment = comments.find(c => c.id === commentId);
+                if (comment) {
+                    comment.replies = comment.replies.filter(r => r.id !== replyId);
+                    showToast('Đã xóa câu trả lời.');
+                }
+            }
+            saveComments();
+            renderComments();
+        }
+
+        // Toggle reply input box form
+        function toggleReplyBox(commentId) {
+            const replyBox = document.getElementById(`reply-box-${commentId}`);
+            if (replyBox) {
+                replyBox.classList.toggle('hidden');
+                if (!replyBox.classList.contains('hidden')) {
+                    const input = replyBox.querySelector('input[type="text"]');
+                    if (input) input.focus();
+                }
+            }
+        }
+
+        // Handle reply submission
+        function handleReplySubmit(e, commentId) {
+            e.preventDefault();
+            const form = e.target;
+            const nameInput = form.querySelector('.reply-name');
+            const textInput = form.querySelector('.reply-text');
+
+            const comment = comments.find(c => c.id === commentId);
+            if (comment) {
+                const newReply = {
+                    id: `${commentId}-${Date.now()}`,
+                    name: nameInput.value.trim(),
+                    text: textInput.value.trim(),
+                    timestamp: Date.now(),
+                    likes: 0,
+                    liked: false
+                };
+                comment.replies.push(newReply);
+                saveComments();
+                renderComments();
+                showToast('Đã gửi câu trả lời thành công!');
+            }
+        }
+
+        // Render all comments to UI
+        function renderComments() {
+            const container = document.getElementById('commentsContainer');
+            const sortVal = document.getElementById('sortSelect').value;
+
+            let sortedComments = [...comments];
+            if (sortVal === 'newest') {
+                sortedComments.sort((a, b) => b.timestamp - a.timestamp);
+            } else if (sortVal === 'oldest') {
+                sortedComments.sort((a, b) => a.timestamp - b.timestamp);
+            } else if (sortVal === 'likes') {
+                sortedComments.sort((a, b) => b.likes - a.likes);
+            }
+
+            // Empty state handling
+            if (sortedComments.length === 0) {
+                container.innerHTML = `
+                    <div class="bg-white rounded-2xl p-12 text-center border border-slate-200/80 shadow-xs flex flex-col items-center justify-center gap-4 animate-fade-in">
+                        <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-full flex items-center justify-center text-2xl shadow-inner">
+                            <i class="fa-regular fa-comment-dots"></i>
+                        </div>
+                        <div class="flex flex-col gap-1 max-w-sm">
+                            <h3 class="font-bold text-slate-800 text-base">Chưa có bình luận nào</h3>
+                            <p class="text-slate-500 text-xs">Hãy là người đầu tiên chia sẻ ý kiến hoặc thảo luận trong khung này nhé!</p>
+                        </div>
+                    </div>
+                `;
+                updateBadgeCount();
+                return;
+            }
+
+            let html = '';
+            sortedComments.forEach(comment => {
+                const avatarBg = getAvatarColor(comment.name);
+                const initial = comment.name.charAt(0).toUpperCase();
+
+                html += `
+                    <div class="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200/80 shadow-xs animate-fade-in flex flex-col gap-3">
+                        <!-- Comment Header -->
+                        <div class="flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-9 h-9 rounded-full bg-gradient-to-br ${avatarBg} text-white font-bold flex items-center justify-center text-xs shadow-inner">
+                                    ${initial}
+                                </div>
+                                <div>
+                                    <h3 class="font-semibold text-sm text-slate-900">${escapeHtml(comment.name)}</h3>
+                                    <span class="text-xs text-slate-400">${timeAgo(comment.timestamp)}</span>
+                                </div>
+                            </div>
+                            <button onclick="deleteComment('${comment.id}')" class="text-slate-400 hover:text-rose-500 p-1.5 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer" title="Xóa bình luận">
+                                <i class="fa-solid fa-trash-can text-xs"></i>
+                            </button>
+                        </div>
+
+                        <!-- Comment Body -->
+                        <p class="text-sm text-slate-700 pl-12 whitespace-pre-wrap leading-relaxed">${escapeHtml(comment.text)}</p>
+
+                        <!-- Comment Actions -->
+                        <div class="flex items-center gap-4 pl-12 pt-1 text-xs font-medium text-slate-500">
+                            <button onclick="toggleLike('${comment.id}')" class="flex items-center gap-1.5 hover:text-rose-600 transition-colors cursor-pointer ${comment.liked ? 'text-rose-600 font-semibold' : ''}">
+                                <i class="${comment.liked ? 'fa-solid' : 'fa-regular'} fa-heart text-sm"></i>
+                                <span>${comment.likes}</span> Thích
+                            </button>
+                            <button onclick="toggleReplyBox('${comment.id}')" class="flex items-center gap-1.5 hover:text-indigo-600 transition-colors cursor-pointer">
+                                <i class="fa-solid fa-reply text-xs"></i> Trả lời
+                            </button>
+                        </div>
+
+                        <!-- Reply Form Box (Hidden by default) -->
+                        <div id="reply-box-${comment.id}" class="hidden pl-12 pt-3">
+                            <form onsubmit="handleReplySubmit(event, '${comment.id}')" class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex flex-col gap-2.5">
+                                <input type="text" placeholder="Tên của bạn..." required class="reply-name text-xs bg-white border border-slate-200 rounded-lg px-3 py-1.5 font-semibold text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                                <input type="text" placeholder="Viết câu trả lời của bạn..." required class="reply-text text-xs bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500/20">
+                                <div class="flex justify-end gap-2">
+                                    <button type="button" onclick="toggleReplyBox('${comment.id}')" class="px-3 py-1 text-xs text-slate-500 hover:bg-slate-200 rounded-lg transition-all cursor-pointer">Hủy</button>
+                                    <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer">Gửi phản hồi</button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Nested Replies List -->
+                        ${comment.replies && comment.replies.length > 0 ? `
+                            <div class="pl-10 sm:pl-12 pt-3 flex flex-col gap-3 border-t border-slate-100 mt-2">
+                                ${comment.replies.map(reply => {
+                                    const replyAvatarBg = getAvatarColor(reply.name);
+                                    const replyInitial = reply.name.charAt(0).toUpperCase();
+                                    return `
+                                        <div class="bg-slate-50/80 rounded-xl p-3 border border-slate-200/60 flex flex-col gap-2">
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center gap-2.5">
+                                                    <div class="w-7 h-7 rounded-full bg-gradient-to-br ${replyAvatarBg} text-white font-bold flex items-center justify-center text-[10px] shadow-inner">
+                                                        ${replyInitial}
+                                                    </div>
+                                                    <div>
+                                                        <h4 class="font-semibold text-xs text-slate-900">${escapeHtml(reply.name)}</h4>
+                                                        <span class="text-[10px] text-slate-400">${timeAgo(reply.timestamp)}</span>
+                                                    </div>
+                                                </div>
+                                                <button onclick="deleteComment('${comment.id}', '${reply.id}')" class="text-slate-400 hover:text-rose-500 p-1 rounded hover:bg-rose-50 transition-colors cursor-pointer" title="Xóa trả lời">
+                                                    <i class="fa-solid fa-trash-can text-[10px]"></i>
+                                                </button>
+                                            </div>
+                                            <p class="text-xs text-slate-700 pl-9 whitespace-pre-wrap leading-relaxed">${escapeHtml(reply.text)}</p>
+                                            <div class="flex items-center gap-3 pl-9 pt-0.5 text-[11px] font-medium text-slate-500">
+                                                <button onclick="toggleLike('${comment.id}', '${reply.id}')" class="flex items-center gap-1 hover:text-rose-600 transition-colors cursor-pointer ${reply.liked ? 'text-rose-600 font-semibold' : ''}">
+                                                    <i class="${reply.liked ? 'fa-solid' : 'fa-regular'} fa-heart"></i>
+                                                    <span>${reply.likes}</span> Thích
+                                                </button>
+                                            </div>
+                                        </div>
+                                    `;
+                                }).join('')}
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            });
+
+            container.innerHTML = html;
+            updateBadgeCount();
+        }
+
+        // Security helper to escape HTML
+        function escapeHtml(text) {
+            const map = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return text.replace(/[&<>"']/g, function(m) { return map[m]; });
+        }
+
+        // Initial render on window load
+        window.onload = function() {
+            renderComments();
+        };
+    </script>
+</body>
+</html>
